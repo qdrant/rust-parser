@@ -17,6 +17,8 @@ struct TContext {
     file_name: Option<String>,
     struct_name: Option<String>,
     snippet: Option<String>,
+    upper_lines: Option<String>,
+    lower_lines: Option<String>,
 }
 
 impl TContext {
@@ -28,6 +30,21 @@ impl TContext {
         }
         self.snippet = Some(snippet);
     }
+    fn add_rest_lines(&mut self, lines: &[&str], line_from: usize, line_to: usize) {
+        let mut upper_lines = String::new();
+        let mut lower_lines = String::new();
+        for line in &lines[0..line_from - 1] {
+            upper_lines.push_str(line);
+            upper_lines.push_str("\n");
+        }
+        for line in &lines[line_to..lines.len()] {
+            lower_lines.push_str(line);
+            lower_lines.push_str("\n");
+        }
+        self.upper_lines = Some(upper_lines);
+        self.lower_lines = Some(lower_lines);
+    }
+
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +82,7 @@ fn parse_impl(item: &ItemImpl, context: TContext, lines: &[&str]) -> Vec<TCode> 
                 let line_from = method.span().start().line;
                 let line_to = method.span().end().line;
                 context.add_snippet(lines, line_from, line_to);
+                context.add_rest_lines(lines, line_from, line_to);
 
                 let function = TCode {
                     name: method.sig.ident.to_string(),
@@ -89,6 +107,7 @@ fn parse_enum(item: &ItemEnum, mut context: TContext, lines: &[&str]) -> TCode {
     let line_from = item.span().start().line;
     let line_to = item.span().end().line;
     context.add_snippet(lines, line_from, line_to);
+    context.add_rest_lines(lines, line_from, line_to);
 
     let docstring = item.attrs.iter()
         .find(|attr| attr.path.is_ident("doc"))
@@ -111,6 +130,7 @@ fn parse_struct(item: &ItemStruct, mut context: TContext, lines: &[&str]) -> TCo
     let line_from = item.span().start().line;
     let line_to = item.span().end().line;
     context.add_snippet(lines, line_from, line_to);
+    context.add_rest_lines(lines, line_from, line_to);
 
     let docstring = item.attrs.iter()
         .find(|attr| attr.path.is_ident("doc"))
@@ -138,6 +158,7 @@ fn parse_fn(item: &ItemFn, mut context: TContext, lines: &[&str]) -> TCode {
     let line_from = item.span().start().line;
     let line_to = item.span().end().line;
     context.add_snippet(lines, line_from, line_to);
+    context.add_rest_lines(lines, line_from, line_to);
 
     let function = TCode {
         name: item.sig.ident.to_string(),
@@ -226,6 +247,8 @@ fn main() {
                 file_name: Some(path.file_name().unwrap().to_str().unwrap().to_string()),
                 struct_name: None,
                 snippet: None,
+                upper_lines: None,
+                lower_lines: None,
             }, &lines);
             functions.append(&mut f);
             structs.append(&mut s);
