@@ -12,5 +12,5 @@ cargo run -- $PATH_TO_RUST_PROJECT > structures.jsonl
 Or Docker:
 
 ```bash
-
+docker run --rm -v $PATH_TO_RUST_PROJECT:/source qdrant/rust-parser ./rust_parser /source > structures.jsonl
 ```
