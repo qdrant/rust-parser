@@ -54,11 +54,11 @@ fn parse_impl(item: &ItemImpl, context: TContext, lines: &[&str]) -> Vec<TCode> 
     let mut functions = Vec::new();
     for item in &item.items {
         match item {
-            &ImplItem::Method(ref method) => {
+            &ImplItem::Fn(ref method) => {
                 let signature = &method.sig;
                 let docstring = method.attrs.iter()
-                    .find(|attr| attr.path.is_ident("doc"))
-                    .map(|attr| attr.tokens.to_string());
+                    .find(|attr| attr.path().is_ident("doc"))
+                    .map(|attr| attr.to_token_stream().to_string());
 
                 let mut context = context.clone();
                 let line = method.sig.ident.span().start().line;
@@ -91,8 +91,8 @@ fn parse_enum(item: &ItemEnum, mut context: TContext, lines: &[&str]) -> TCode {
     context.add_snippet(lines, line_from, line_to);
 
     let docstring = item.attrs.iter()
-        .find(|attr| attr.path.is_ident("doc"))
-        .map(|attr| attr.tokens.to_string());
+        .find(|attr| attr.path().is_ident("doc"))
+        .map(|attr| attr.to_token_stream().to_string() );
 
     TCode {
         name: item.ident.to_string(),
@@ -113,8 +113,8 @@ fn parse_struct(item: &ItemStruct, mut context: TContext, lines: &[&str]) -> TCo
     context.add_snippet(lines, line_from, line_to);
 
     let docstring = item.attrs.iter()
-        .find(|attr| attr.path.is_ident("doc"))
-        .map(|attr| attr.tokens.to_string());
+        .find(|attr| attr.path().is_ident("doc"))
+        .map(|attr| attr.to_token_stream().to_string());
 
     TCode {
         name: item.ident.to_string(),
@@ -131,8 +131,8 @@ fn parse_struct(item: &ItemStruct, mut context: TContext, lines: &[&str]) -> TCo
 fn parse_fn(item: &ItemFn, mut context: TContext, lines: &[&str]) -> TCode {
     let signature = &item.sig;
     let docstring = item.attrs.iter()
-        .find(|attr| attr.path.is_ident("doc"))
-        .map(|attr| attr.tokens.to_string());
+        .find(|attr| attr.path().is_ident("doc"))
+        .map(|attr| attr.to_token_stream().to_string());
     let line = item.sig.ident.span().start().line;
 
     let line_from = item.span().start().line;
@@ -217,7 +217,7 @@ fn main() {
 
         let lines = file_content.lines().collect::<Vec<&str>>();
 
-        let syntax = syn::parse_file(&file_content).unwrap();
+        let syntax = syn::parse_file(&file_content).expect(format!("Failed to parse file: {:?}", path).as_str());
 
         for item in &syntax.items {
             let (mut f, mut s) = parse_item(item, TContext {
