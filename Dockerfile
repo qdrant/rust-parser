@@ -26,7 +26,7 @@ RUN cargo build --release
 
 RUN mv target/release/rust_parser /rust_parser/rust_parser
 
-FROM debian:11-slim
+FROM debian:12-slim
 ARG APP=/rust_parser
 
 RUN apt-get update \
